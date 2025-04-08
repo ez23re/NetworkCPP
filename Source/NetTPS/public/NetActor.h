@@ -51,5 +51,12 @@ public:
 	UFUNCTION()
 	void OnRep_ChangeMatColor();
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_ChangeColor(const FLinearColor newColor);
+	UFUNCTION(Client, Unreliable)
+	void ClientRPC_ChangeColor(const FLinearColor newColor);
+	UFUNCTION(NetMulticast, Unreliable) // Unrealibale -> 패킷 하나 빠져도 문제없는! ex. 캐릭터이동 등
+	void MulticastRPC_ChangeColor(const FLinearColor newColor);
+
 
 };

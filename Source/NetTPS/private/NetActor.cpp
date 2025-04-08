@@ -35,14 +35,14 @@ void ANetActor::BeginPlay()
 		GetWorldTimerManager().SetTimer(Handle,
 			FTimerDelegate::CreateLambda([&]
 				{
-					MatColor = FLinearColor(FMath::RandRange(0.f,0.3f),
+					FLinearColor MatColor = FLinearColor(FMath::RandRange(0.f, 0.3f),
 											FMath::RandRange(0.f, 0.3f),
 											FMath::RandRange(0.f, 0.3f),1.f);
-					OnRep_ChangeMatColor();
+					//OnRep_ChangeMatColor();
+					ServerRPC_ChangeColor(MatColor);
 				}
 			), 1, true);
 		}
-
 }
 
 void ANetActor::Tick(float DeltaTime)
@@ -142,6 +142,29 @@ void ANetActor::OnRep_ChangeMatColor()
 {
 	if (Mat) {
 		Mat->SetVectorParameterValue(TEXT("FloorColor"), MatColor);
+	}
+}
+
+void ANetActor::ServerRPC_ChangeColor_Implementation(const FLinearColor newColor)
+{
+	/*if (Mat) {
+		Mat->SetVectorParameterValue(TEXT("FloorColor"), newColor);
+	}*/
+	//ClientRPC_ChangeColor(newColor);
+	MulticastRPC_ChangeColor(newColor);
+}
+
+void ANetActor::ClientRPC_ChangeColor_Implementation(const FLinearColor newColor)
+{
+	if (Mat) {
+		Mat->SetVectorParameterValue(TEXT("FloorColor"), newColor);
+	}
+}
+
+void ANetActor::MulticastRPC_ChangeColor_Implementation(const FLinearColor newColor)
+{
+	if (Mat) {
+		Mat->SetVectorParameterValue(TEXT("FloorColor"), newColor);
 	}
 }
 
