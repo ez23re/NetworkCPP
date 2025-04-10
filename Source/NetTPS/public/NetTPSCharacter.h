@@ -86,8 +86,8 @@ public:
 	class UParticleSystem* GunEffect;
 
 	// 사용할 위젯 클래스
-	UPROPERTY(EditDefaultsOnly, Category="UI")
-	TSubclassOf<class UMainUI> MainUIWidget;
+	//UPROPERTY(EditDefaultsOnly, Category="UI")
+	//TSubclassOf<class UMainUI> MainUIWidget;
 
 	// MainUIWidget으로부터 만들어진 인스턴스 
 	UPROPERTY()
@@ -101,6 +101,7 @@ public:
 	int32 MaxBulletCount = 10;
 
 	// 남은 총알 개수
+	UPROPERTY(Replicated)
 	int32 BulletCount = MaxBulletCount;
 
 	// 재장전에서 사용할 InputAction
@@ -121,8 +122,10 @@ public:
 	float MaxHP = 3;
 
 	// 현재 체력
-	UPROPERTY(BlueprintReadOnly, Category="HP")
+	UPROPERTY(ReplicatedUsing=OnRep_HP, BlueprintReadOnly, Category="HP")
 	float hp = MaxHP;
+	UFUNCTION()
+	void OnRep_HP();
 
 	// getter, setter 만드는 
 	__declspec(property(get = GetHP, put = SetHP)) float HP;
@@ -138,7 +141,16 @@ public:
 	// 사망여부
 	bool bIsDead = false;
 
+	// 카메라 셰이크
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<class UCameraShakeBase> DamageCameraShake;
 
+	// 사망처리
+	void DieProcess();
+
+	// 이 함수는 서버에서만 호출 된다
+	virtual void PossessedBy(AController* NewController) override;
+	
 
 public:
 	virtual void Tick(float DeltaSeconds) override;
@@ -184,6 +196,24 @@ public:
 	void ServerRPC_ReleasePistol();
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPC_ReleasePistol(AActor* PistolActor);
+
+
+public:
+	// 총쏘기 RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_Fire();
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPC_Fire(bool bHit, const FHitResult& HitInfo);
+	
+	
+public:
+	// 재장전 RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_Reload();
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_Reload();
+
+
 
 };
 

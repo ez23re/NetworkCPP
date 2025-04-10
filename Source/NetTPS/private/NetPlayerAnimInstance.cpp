@@ -50,3 +50,10 @@ void UNetPlayerAnimInstance::AnimNotify_OnReloadFinish()
 	player->InitAmmonUI();
 
 }
+
+void UNetPlayerAnimInstance::AnimNotify_DieEnd()
+{
+	if (player && player->IsLocallyControlled()) {
+		player->DieProcess(); // 컨트롤하고 있는 유저 화면에서만
+	}
+}

@@ -40,4 +40,22 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="HP")
 	float HP = 1.f;
 
+
+	// DamageUI 애니메이션 
+	UPROPERTY(EditDefaultsOnly, meta=(BindWidgetAnim), Transient, Category="MySettings")
+	class UWidgetAnimation* DamageAnim;
+	// 피격처리 애니메이션 재생
+	void PlayDamageAnimation();
+
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
+	class UHorizontalBox* GameOverUI;
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
+	class UButton* btn_retry;	
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
+	class UButton* btn_exit;
+	
+public:
+	virtual void NativeConstruct() override;
+	UFUNCTION()
+	void OnRetry();
 };
