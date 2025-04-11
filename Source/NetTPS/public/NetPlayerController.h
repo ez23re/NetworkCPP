@@ -26,5 +26,7 @@ public:
 	UPROPERTY()
 	class UMainUI* MainUI;
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_ChangeToSpectator();
 
 };

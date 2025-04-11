@@ -1,0 +1,2 @@
+#include "NetGameInstance.h"
+
