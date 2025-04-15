@@ -24,4 +24,10 @@ public:
 	UFUNCTION()
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 
+	// ¹æ °Ë»ö
+	TSharedPtr<FOnlineSessionSearch> sessionSearch;
+	void FindOtherSession();
+
+	void OnFindSessionsComplete(bool bWasSuccessful);
+
 };

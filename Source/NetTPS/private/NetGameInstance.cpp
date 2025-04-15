@@ -1,13 +1,16 @@
 #include "NetGameInstance.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "NetTPS.h"
+#include "../../../../Plugins/Online/OnlineBase/Source/Public/Online/OnlineSessionNames.h"
 
 void UNetGameInstance::Init()
 {
 	Super::Init();
 	if (auto subsys = IOnlineSubsystem::Get()) {
+		// 서브시스템으로부터 세션인터페이스 가져오기
 		sessionInterface = subsys->GetSessionInterface();
 		sessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UNetGameInstance::OnCreateSessionComplete);
+		sessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UNetGameInstance::OnFindSessionsComplete);
 
 		/*FTimerHandle handle;
 		GetWorld()->GetTimerManager().SetTimer(handle, FTimerDelegate::CreateLambda([&]
@@ -63,4 +66,27 @@ void UNetGameInstance::CreateMySession(FString roomName, int32 playerCount)
 void UNetGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	PRINTLOG(TEXT("SessionName: %s, bWasSuccessful: %d"), *SessionName.ToString(), bWasSuccessful);
+}
+
+void UNetGameInstance::FindOtherSession()
+{
+	sessionSearch = MakeShareable(new FOnlineSessionSearch());
+	// 1. 세션 검색 조건 설정
+	sessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+	// 2. Lan 여부 : 랜인지 스팀으로 되어있는지 체크
+	sessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == FName("NULL");
+	// 3. 최대 검색 세션 수
+	sessionSearch->MaxSearchResults = 10;
+	// 4. 세션 검색
+	sessionInterface->FindSessions(0, sessionSearch.ToSharedRef());
+
+}
+
+void UNetGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	// 찾기 실패시
+	if (!bWasSuccessful) {
+		PRINTLOG(TEXT("Session search failed..."));
+		return;
+	}
 }
