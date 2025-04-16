@@ -16,9 +16,14 @@ void UNetGameInstance::Init()
 		GetWorld()->GetTimerManager().SetTimer(handle, FTimerDelegate::CreateLambda([&]
 			{
 				CreateMySession(mySessionName, 10);
-
 			}
-		), 2.0f, false);*/
+			), 2.0f, false);*/
+		FTimerHandle handle;
+		GetWorld()->GetTimerManager().SetTimer(handle, FTimerDelegate::CreateLambda([&]
+			{
+				FindOtherSession();
+			}
+			), 2.0f, false);
 	}
 }
 
@@ -51,10 +56,10 @@ void UNetGameInstance::CreateMySession(FString roomName, int32 playerCount)
 	sessionSettings.NumPublicConnections = playerCount;
 
 	// 7. 커스텀 룸네임 설정
-	sessionSettings.Set(FName("ROOM_NAME"), roomName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	sessionSettings.Set(FName("ROOM_NAME"), StringBase64Encode(roomName), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	// 8. 호스트 네임 설정
-	sessionSettings.Set(FName("HOST_NAME"), mySessionName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	sessionSettings.Set(FName("HOST_NAME"), StringBase64Encode(mySessionName), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	// netID
 	FUniqueNetIdPtr netID = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
@@ -89,4 +94,98 @@ void UNetGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 		PRINTLOG(TEXT("Session search failed..."));
 		return;
 	}
+
+	// 세션 검색결과 배열
+	auto results = sessionSearch->SearchResults;
+	PRINTLOG(TEXT("Search Result Count : %d"), results.Num());
+
+	for (int i = 0;i < results.Num();++i) {
+		auto sr = results[i];
+		if (sr.IsValid() == false) {
+			continue;
+		}
+
+		FString roomName;
+		FString hostName;
+
+
+		// 세션 정보 구조체 선언
+		FSessionInfo sessionInfo;
+		sessionInfo.index = i;
+
+		sr.Session.SessionSettings.Get(FName("ROOM_NAME"), roomName);
+		sr.Session.SessionSettings.Get(FName("HOST_NAME"), hostName);
+		sessionInfo.roomName = StringBase64Decode(roomName);
+		sessionInfo.hostName = StringBase64Decode(hostName);
+
+		//sr.Session.SessionSettings.Get(FName("ROOM_NAME"), sessionInfo.roomName);
+		//sr.Session.SessionSettings.Get(FName("HOST_NAME"), sessionInfo.hostName);
+
+		// 입장 가능한 플레이어수
+		int32 maxPlayerCount = sr.Session.SessionSettings.NumPublicConnections; //public vs private?
+		// 현재 입장한 플레이어 수 (최대-현재 입장 가능한 수)
+		// NumOpenPublicConnenctions은 스팀에서만 정상적으로 값이 들어온다
+		int32 currentPlayerCount = maxPlayerCount - sr.Session.NumOpenPublicConnections;
+
+		sessionInfo.playerCount = FString::Printf(TEXT("(%d/%d)"), currentPlayerCount, maxPlayerCount);
+
+		// ping 정보 (스템에서는 9999로 나온다)
+		sessionInfo.pingSpeed = sr.PingInMs;
+
+		PRINTLOG(TEXT("%s"), *sessionInfo.ToString());
+	}
+
+	// 정보를 가져온다
+	//for (auto sr : results) {
+	//	// 정보가 유효한지 체크
+	//	if (sr.IsValid() == false) {
+	//		continue;
+	//	}
+	//	FString roomName;
+	//	sr.Session.SessionSettings.Get(FName("ROOM_NAME"), roomName);
+	//	FString hostName;
+	//	sr.Session.SessionSettings.Get(FName("HOST_NAME"), hostName);
+	//	// 세션주인(방장) 이름
+	//	FString userName = sr.Session.OwningUserName;
+	//	// 입장 가능한 플레이어수
+	//	int32 maxPlayerCount = sr.Session.SessionSettings.NumPublicConnections; //public vs private?
+	//	// 현재 입장한 플레이어 수 (최대-현재 입장 가능한 수)
+	//	// NumOpenPublicConnenctions은 스팀에서만 정상적으로 값이 들어온다
+	//	int32 currentPlayerCount = maxPlayerCount - sr.Session.NumOpenPublicConnections;
+	//	// ping 정보 (스템에서는 9999로 나온다)
+	//	int32 pingSpeed = sr.PingInMs;
+
+	//	PRINTLOG(TEXT("%s : %s(%s) - (%d/%d), %dms"), *roomName, *hostName, *userName, currentPlayerCount, maxPlayerCount, pingSpeed);
+	//}
 }
+
+FString UNetGameInstance::StringBase64Encode(const FString& str)
+{
+	// Set할 때 : FString -> UTF8 (std::string) -> TArray<uint8> -> base64로 Encode
+	std::string utf8String = TCHAR_TO_UTF8(*str);
+	TArray<uint8> arrayData = TArray<uint8>((uint8*)(utf8String.c_str()), utf8String.length());
+	return FBase64::Encode(arrayData);
+}
+
+FString UNetGameInstance::StringBase64Decode(const FString& str)
+{
+	// Get할 때 : FString -> base64로 Decode -> TArray<uint8> -> TCHAR
+	TArray<uint8> arrayData;
+	FBase64::Decode(str, arrayData);
+	std::string utf8String((char*)arrayData.GetData(), arrayData.Num());
+	return UTF8_TO_TCHAR(utf8String.c_str());
+}
+
+/*
+* 언리얼의 FString은 기본 TCHAR 배열로 되어있다
+* TCHAR = UTF-16(wchar_t, 2byte)
+* 일단 스팀 서버를 이용하면 깨진다
+* 원인을 정확히 알 수 없으나 아마 UTF-8을 사용하는 것 같다
+* 이런 문제를 해결하기 위해서 Base64 인코딩 / 디코딩을 이용
+* 이걸 이용하는 이유는 안전하게 변환을 해서 전달이 가능
+* Base64 인코딩 : 문자열을 uint8로 배열로 만든 후
+* ASCII 코드로 변환해서 사용
+* 
+* 2의 6승 = 6bit 형식으로 인코딩 = 6bit씩 끊어서 인코딩
+* 
+*/
