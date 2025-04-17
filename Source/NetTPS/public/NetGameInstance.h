@@ -27,6 +27,13 @@ struct FSessionInfo
 	}
 };
 
+// 세션 검색이 끝났을 때 호출될 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSearchSignature, const FSessionInfo&, sessionInfo);
+
+// 세션 검색 상태 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSearchStateSignature, bool, bIsSearching);
+
+
 UCLASS()
 class NETTPS_API UNetGameInstance : public UGameInstance
 {
@@ -51,6 +58,12 @@ public:
 	void FindOtherSession();
 
 	void OnFindSessionsComplete(bool bWasSuccessful);
+
+	// 방 찾기 완료 콜백을 등록할 델리게이트
+	FSearchSignature onSearchCompleted;
+	// 방 찾기 상태 콜백 델리게이트
+	FSearchStateSignature onSearchState;
+
 
 	// 다국어 인코딩
 	FString StringBase64Encode(const FString& str);

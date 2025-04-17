@@ -18,12 +18,12 @@ void UNetGameInstance::Init()
 				CreateMySession(mySessionName, 10);
 			}
 			), 2.0f, false);*/
-		FTimerHandle handle;
-		GetWorld()->GetTimerManager().SetTimer(handle, FTimerDelegate::CreateLambda([&]
-			{
-				FindOtherSession();
-			}
-			), 2.0f, false);
+		//FTimerHandle handle;
+		//GetWorld()->GetTimerManager().SetTimer(handle, FTimerDelegate::CreateLambda([&]
+		//	{
+		//		FindOtherSession();
+		//	}
+		//), 2.0f, false);
 	}
 }
 
@@ -75,7 +75,10 @@ void UNetGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucce
 
 void UNetGameInstance::FindOtherSession()
 {
+	onSearchState.Broadcast(true);
+
 	sessionSearch = MakeShareable(new FOnlineSessionSearch());
+	
 	// 1. 세션 검색 조건 설정
 	sessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 	// 2. Lan 여부 : 랜인지 스팀으로 되어있는지 체크
@@ -91,6 +94,7 @@ void UNetGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 {
 	// 찾기 실패시
 	if (!bWasSuccessful) {
+		onSearchState.Broadcast(false);
 		PRINTLOG(TEXT("Session search failed..."));
 		return;
 	}
@@ -133,7 +137,13 @@ void UNetGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 		sessionInfo.pingSpeed = sr.PingInMs;
 
 		PRINTLOG(TEXT("%s"), *sessionInfo.ToString());
+
+		// 델리게이트로 위젯에 알려주기
+		onSearchCompleted.Broadcast(sessionInfo);
+
 	}
+	onSearchState.Broadcast(false);
+
 
 	// 정보를 가져온다
 	//for (auto sr : results) {
