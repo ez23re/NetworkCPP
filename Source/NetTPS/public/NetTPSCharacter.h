@@ -63,7 +63,7 @@ public:
 	void TakePistol(const FInputActionValue& Value);
 
 	// ÃÑÀ» ÄÄÆ÷³ÍÆ®¿¡ ºÙÀÌ±â
-	void AttachPistol(AActor* PistolActor);
+	void AttachPistol(AActor* pistolActor);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
 	UInputAction* ReleaseAction;
@@ -72,7 +72,7 @@ public:
 	void ReleasePistol(const FInputActionValue& Value);
 
 	// ÃÑÀ» ÄÄÆ÷³ÍÆ®¿¡¼­ ºÐ¸®
-	void DetachPistol(AActor* PistolActor);
+	void DetachPistol(AActor* pistolActor);
 
 	// ÃÑ ½î±â ÀÔ·Â ¾×¼Ç
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
@@ -189,13 +189,13 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_TakePistol();
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastRPC_TakePistol(AActor* PistolActor);
+	void MulticastRPC_TakePistol(AActor* pistolActor);
 
 	// ÃÑ³õ±â RPC
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_ReleasePistol();
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastRPC_ReleasePistol(AActor* PistolActor);
+	void MulticastRPC_ReleasePistol(AActor* pistolActor);
 
 
 public:

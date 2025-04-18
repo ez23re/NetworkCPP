@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "OnlineSessionSettings.h"
+#include "../../../../Plugins/Online/OnlineSubsystem/Source/Public/Interfaces/OnlineSessionInterface.h"
 #include "NetGameInstance.generated.h"
 
 USTRUCT(BlueprintType)
@@ -65,6 +66,13 @@ public:
 	FSearchStateSignature onSearchState;
 
 
+	// 세션(방) 입장
+	void JoinSelectedSession(int32 index);
+	// 세션 입장 콜백
+	void OnJoinSessionCompleted(FName sessionName, EOnJoinSessionCompleteResult::Type result);
+
+
+public:
 	// 다국어 인코딩
 	FString StringBase64Encode(const FString& str);
 	FString StringBase64Decode(const FString& str);

@@ -1,6 +1,22 @@
 #include "SessionSlotWidget.h"
 #include "Components/TextBlock.h"
 #include "NetGameInstance.h"
+#include "Components/Button.h"
+
+void USessionSlotWidget::NativeConstruct()
+{	
+	Super::NativeConstruct();
+
+	btn_join->OnClicked.AddDynamic(this, &ThisClass::JoinSession);
+}
+
+void USessionSlotWidget::JoinSession()
+{
+	auto gi = Cast<UNetGameInstance>(GetWorld()->GetGameInstance());
+	if (gi != nullptr) {
+		gi->JoinSelectedSession(sessionNumber);
+	}
+}
 
 void USessionSlotWidget::Set(const struct FSessionInfo& sessionInfo)
 {
@@ -11,3 +27,4 @@ void USessionSlotWidget::Set(const struct FSessionInfo& sessionInfo)
 
 	sessionNumber = sessionInfo.index;
 }
+

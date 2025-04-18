@@ -11,6 +11,8 @@ class NETTPS_API USessionSlotWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
+	virtual void NativeConstruct() override;
+
 	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
 	class UTextBlock* txt_roomName;
 	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
@@ -23,5 +25,13 @@ public:
 	int32 sessionNumber;
 	
 	void Set(const struct FSessionInfo& sessionInfo);
+
+	// 세션조인
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
+	class UButton* btn_join;
+	UFUNCTION()
+	void JoinSession();
+
+
 
 };

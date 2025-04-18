@@ -12,6 +12,8 @@ void UNetGameInstance::Init()
 		sessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UNetGameInstance::OnCreateSessionComplete);
 		sessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UNetGameInstance::OnFindSessionsComplete);
 
+		sessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinSessionCompleted);
+
 		/*FTimerHandle handle;
 		GetWorld()->GetTimerManager().SetTimer(handle, FTimerDelegate::CreateLambda([&]
 			{
@@ -71,6 +73,9 @@ void UNetGameInstance::CreateMySession(FString roomName, int32 playerCount)
 void UNetGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	PRINTLOG(TEXT("SessionName: %s, bWasSuccessful: %d"), *SessionName.ToString(), bWasSuccessful);
+	if (bWasSuccessful == true) {
+		GetWorld()->ServerTravel(TEXT("/Game/Net/Maps/BattleMap?listen"));
+	}
 }
 
 void UNetGameInstance::FindOtherSession()
@@ -169,6 +174,49 @@ void UNetGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 	//}
 }
 
+void UNetGameInstance::JoinSelectedSession(int32 index)
+{
+	auto sr = sessionSearch->SearchResults;
+	// 이건 현재 언리얼 버그
+	sr[index].Session.SessionSettings.bUseLobbiesIfAvailable = true;
+	sr[index].Session.SessionSettings.bUsesPresence = true;
+	sessionInterface->JoinSession(0, FName("MySessionName"), sr[index]);
+
+}
+
+
+void UNetGameInstance::OnJoinSessionCompleted(FName sessionName, EOnJoinSessionCompleteResult::Type result)
+{
+	if (result == EOnJoinSessionCompleteResult::Success) {
+		auto pc = GetWorld()->GetFirstPlayerController();
+		
+		FString url;
+		sessionInterface->GetResolvedConnectString(sessionName, url);
+		PRINTLOG(TEXT("Join URL : %s"), *url);
+
+		if (url.IsEmpty() == false) {
+			pc->ClientTravel(url, ETravelType::TRAVEL_Absolute);
+		}
+	}
+	else {
+		PRINTLOG(TEXT("Join Session failed : %d"), result);
+	}
+}
+
+/*
+* 언리얼의 FString은 기본 TCHAR 배열로 되어있다
+* TCHAR = UTF-16(wchar_t, 2byte)
+* 일단 스팀 서버를 이용하면 깨진다
+* 원인을 정확히 알 수 없으나 아마 UTF-8을 사용하는 것 같다
+* 이런 문제를 해결하기 위해서 Base64 인코딩 / 디코딩을 이용
+* 이걸 이용하는 이유는 안전하게 변환을 해서 전달이 가능
+* Base64 인코딩 : 문자열을 uint8로 배열로 만든 후
+* ASCII 코드로 변환해서 사용
+*
+* 2의 6승 = 6bit 형식으로 인코딩 = 6bit씩 끊어서 인코딩
+*
+*/
+
 FString UNetGameInstance::StringBase64Encode(const FString& str)
 {
 	// Set할 때 : FString -> UTF8 (std::string) -> TArray<uint8> -> base64로 Encode
@@ -185,17 +233,3 @@ FString UNetGameInstance::StringBase64Decode(const FString& str)
 	std::string utf8String((char*)arrayData.GetData(), arrayData.Num());
 	return UTF8_TO_TCHAR(utf8String.c_str());
 }
-
-/*
-* 언리얼의 FString은 기본 TCHAR 배열로 되어있다
-* TCHAR = UTF-16(wchar_t, 2byte)
-* 일단 스팀 서버를 이용하면 깨진다
-* 원인을 정확히 알 수 없으나 아마 UTF-8을 사용하는 것 같다
-* 이런 문제를 해결하기 위해서 Base64 인코딩 / 디코딩을 이용
-* 이걸 이용하는 이유는 안전하게 변환을 해서 전달이 가능
-* Base64 인코딩 : 문자열을 uint8로 배열로 만든 후
-* ASCII 코드로 변환해서 사용
-* 
-* 2의 6승 = 6bit 형식으로 인코딩 = 6bit씩 끊어서 인코딩
-* 
-*/

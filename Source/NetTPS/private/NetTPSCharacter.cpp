@@ -112,9 +112,9 @@ void ANetTPSCharacter::TakePistol(const FInputActionValue& Value)
 	ServerRPC_TakePistol();
 }
 
-void ANetTPSCharacter::AttachPistol(AActor* PistolActor)
+void ANetTPSCharacter::AttachPistol(AActor* pistolActor)
 {
-	auto meshComp = PistolActor->GetComponentByClass<UStaticMeshComponent>();
+	auto meshComp = pistolActor->GetComponentByClass<UStaticMeshComponent>();
 	meshComp->SetSimulatePhysics(false);
 	meshComp->AttachToComponent(GunComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	
@@ -131,9 +131,9 @@ void ANetTPSCharacter::ReleasePistol(const FInputActionValue& Value)
 	ServerRPC_ReleasePistol();
 }
 
-void ANetTPSCharacter::DetachPistol(AActor* PistolActor)
+void ANetTPSCharacter::DetachPistol(AActor* pistolActor)
 {
-	auto meshComp = PistolActor->GetComponentByClass<UStaticMeshComponent>();
+	auto meshComp = pistolActor->GetComponentByClass<UStaticMeshComponent>();
 	meshComp->SetSimulatePhysics(true);
 	meshComp->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
 	
@@ -299,20 +299,20 @@ void ANetTPSCharacter::ServerRPC_TakePistol_Implementation()
 {
 	// 클라에서 요청받은 총잡기를 처리한다 (여기는 서버)
 	// 2. 월드에 있는 총을 모두 찾는다
-	for (auto PistolActor : PistolActors) {
+	for (auto pistolActor : PistolActors) {
 		// 3. 총의 주인이 있다면 그 총은 검사하지 않는다
-		if (PistolActor->GetOwner() != nullptr) {
+		if (pistolActor->GetOwner() != nullptr) {
 			continue;
 		}
 		// 4. 총과의 거리를 구한다
-		float Distance = FVector::Dist(GetActorLocation(), PistolActor->GetActorLocation());
+		float Distance = FVector::Dist(GetActorLocation(), pistolActor->GetActorLocation());
 		// 5. 총이 범위 안에 있다면 
 		if (Distance > DistanceToGun) {
 			continue;
 		}
 
 		// 6. 소유중인 총으로 등록
-		OwnedPistol = PistolActor;
+		OwnedPistol = pistolActor;
 
 		// 7. 총의 소유자를 자신으로 등록
 		OwnedPistol->SetOwner(this);
@@ -321,16 +321,16 @@ void ANetTPSCharacter::ServerRPC_TakePistol_Implementation()
 		bHasPistol = true;
 
 		// 총을 잡으라고 클라에 요청 (여기는 서버)
-		MulticastRPC_TakePistol(PistolActor);
+		MulticastRPC_TakePistol(pistolActor);
 		break; // 총 꺼냈으니까 돌아야할 필요X
 	}
 }
 
-void ANetTPSCharacter::MulticastRPC_TakePistol_Implementation(AActor* PistolActor)
+void ANetTPSCharacter::MulticastRPC_TakePistol_Implementation(AActor* pistolActor)
 {
 	// 서버에서 인자로 넘어온 총 액터를 붙이자 (여기는 클라)
 	// 9. 총 붙이기
-	AttachPistol(PistolActor);
+	AttachPistol(pistolActor);
 }
 
 void ANetTPSCharacter::ServerRPC_ReleasePistol_Implementation()
@@ -346,10 +346,10 @@ void ANetTPSCharacter::ServerRPC_ReleasePistol_Implementation()
 	}
 }
 
-void ANetTPSCharacter::MulticastRPC_ReleasePistol_Implementation(AActor* PistolActor)
+void ANetTPSCharacter::MulticastRPC_ReleasePistol_Implementation(AActor* pistolActor)
 {
 	// 총 분리
-	DetachPistol(PistolActor);
+	DetachPistol(pistolActor);
 }
 
 void ANetTPSCharacter::ServerRPC_Fire_Implementation()
